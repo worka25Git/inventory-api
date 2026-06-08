@@ -13,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/assets")
@@ -26,6 +27,21 @@ public class AssetController {
         AssetResponseDTO response = assetService.save(dto);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(response);
+    }
+
+    @PutMapping("/{technicalId}")
+    public ResponseEntity<AssetResponseDTO> update(
+            @PathVariable UUID technicalId,
+            @RequestBody
+            @Valid
+            AssetRequestDTO dto) {
+
+        return ResponseEntity.ok(
+                assetService.update(
+                        technicalId,
+                        dto
+                )
+        );
     }
 
     @GetMapping

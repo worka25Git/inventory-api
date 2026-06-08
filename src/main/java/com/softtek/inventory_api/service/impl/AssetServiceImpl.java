@@ -4,6 +4,7 @@ import com.softtek.inventory_api.dto.AssetFilterDTO;
 import com.softtek.inventory_api.dto.AssetRequestDTO;
 import com.softtek.inventory_api.dto.AssetResponseDTO;
 import com.softtek.inventory_api.entity.Asset;
+import com.softtek.inventory_api.entity.AssetStatus;
 import com.softtek.inventory_api.entity.Category;
 import com.softtek.inventory_api.exception.BusinessException;
 import com.softtek.inventory_api.repository.AssetRepository;
@@ -135,5 +136,58 @@ public class AssetServiceImpl implements AssetService {
                         asset.getCategory().getId(),
                         asset.getCategory().getName()
                 ));
+    }
+
+    @Override
+    public AssetResponseDTO update(
+            UUID technicalId,
+            AssetRequestDTO dto) {
+
+        Asset asset = assetRepository.findById(technicalId)
+                        .orElseThrow(() ->
+                                new BusinessException(
+                                        "Activo no encontrado"
+                                ));
+        Category category =
+                categoryRepository.findById(dto.categoryId())
+                        .orElseThrow(() ->
+                                new BusinessException(
+                                        "Categoría no encontrada"
+                                ));
+
+        validateStatusTransition(asset.getStatus(), dto.status());
+
+        asset.setSerialNumber(dto.serialNumber());
+        asset.setBrandModel(dto.brandModel());
+        asset.setStatus(dto.status());
+        asset.setAcquisitionCost(dto.acquisitionCost());
+        asset.setCategory(category);
+        Asset updatedAsset = assetRepository.save(asset);
+
+        return new AssetResponseDTO(
+                updatedAsset.getTechnicalId(),
+                updatedAsset.getInventoryFolio(),
+                updatedAsset.getSerialNumber(),
+                updatedAsset.getBrandModel(),
+                updatedAsset.getStatus(),
+                updatedAsset.getAcquisitionCost(),
+                updatedAsset.getCreatedAt(),
+                updatedAsset.getCategory().getId(),
+                updatedAsset.getCategory().getName()
+        );
+
+    }
+
+    private void validateStatusTransition(
+            AssetStatus currentStatus,
+            AssetStatus newStatus) {
+
+        if (currentStatus == AssetStatus.DECOMMISSIONED
+                && newStatus != AssetStatus.DECOMMISSIONED) {
+
+            throw new BusinessException(
+                    "Un activo en baja no puede regresar a un estado operativo"
+            );
+        }
     }
 }
