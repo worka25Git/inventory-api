@@ -1,5 +1,6 @@
 package com.softtek.inventory_api.service.impl;
 
+import com.softtek.inventory_api.dto.AssetFilterDTO;
 import com.softtek.inventory_api.dto.AssetRequestDTO;
 import com.softtek.inventory_api.dto.AssetResponseDTO;
 import com.softtek.inventory_api.entity.Asset;
@@ -8,6 +9,7 @@ import com.softtek.inventory_api.exception.BusinessException;
 import com.softtek.inventory_api.repository.AssetRepository;
 import com.softtek.inventory_api.repository.CategoryRepository;
 import com.softtek.inventory_api.service.AssetService;
+import com.softtek.inventory_api.specification.AssetSpecification;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -31,10 +33,10 @@ public class AssetServiceImpl implements AssetService {
 
         //Validar categoría
         Category category = categoryRepository.findById(dto.categoryId())
-                        .orElseThrow(() ->
-                                new BusinessException(
-                                        "Categoría no encontrada"
-                                ));
+                .orElseThrow(() ->
+                        new BusinessException(
+                                "Categoría no encontrada"
+                        ));
 
         //Validar número de serie único
         if (assetRepository.existsBySerialNumber(dto.serialNumber())) {
@@ -80,17 +82,17 @@ public class AssetServiceImpl implements AssetService {
     }
 
 
-
     /**
      * Metodo para generar el folio
+     *
      * @param category
      * @return
      */
     private String generateInventoryFolio(Category category) {
 
         long count = assetRepository.countByCategoryId(
-                        category.getId()
-                );
+                category.getId()
+        );
 
         long next = count + 1;
 
@@ -105,7 +107,12 @@ public class AssetServiceImpl implements AssetService {
     }
 
     @Override
-    public Page<AssetResponseDTO> findAll(int page, int size, String sortBy) {
+    public Page<AssetResponseDTO> findAll(
+            AssetFilterDTO filter,
+            int page,
+            int size,
+            String sortBy) {
+
         Pageable pageable =
                 PageRequest.of(
                         page,
@@ -113,7 +120,10 @@ public class AssetServiceImpl implements AssetService {
                         Sort.by(sortBy)
                 );
 
-        return assetRepository.findAll(pageable)
+        return assetRepository.findAll(
+                        AssetSpecification.filter(filter),
+                        pageable
+                )
                 .map(asset -> new AssetResponseDTO(
                         asset.getTechnicalId(),
                         asset.getInventoryFolio(),
